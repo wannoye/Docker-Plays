@@ -1,0 +1,88 @@
+---
+- name: Install PiHole Server in Docker
+  hosts: Quinjet
+  become: true
+  vars:
+    - ansible_connection: ssh
+    - pihole: "/var/lib/docker/PiHole"
+
+  tasks:
+
+  - name: Get Service Facts
+    service_facts:
+
+  - name: Stop the Existing PiHole Server 
+    docker_container: 
+      name: PiHole
+      image: pihole/pihole
+      state: stopped
+    ignore_errors: true
+
+  - name: Remove Existing 'pihole/pihole' Docker Images
+    docker_image:
+      name: pihole/pihole
+      state: absent
+      force_absent: true
+
+  - name: Allow PiHole Traffic through Firewalld (RHEL)
+    firewalld:
+      service: "{{ item }}"
+      permanent: true
+      state: enabled
+    loop:
+      - "dhcpv6"
+      - "dhcp"
+      - "dns"
+      - "http"
+    when: 
+      - ansible_facts['os_family'] in ["RedHat", "AlmaLinux"]
+      - ansible_facts.services['firewalld.service'].state == "running"
+
+  - name: Create a UFW Profile for PiHole (Debian)
+    template:
+      src: "pihole.ufw.j2"
+      dest: "/etc/ufw/applications.d/pihole"
+      owner: root
+      group: root
+      mode: '0644'
+    when: 
+      - ansible_facts['os_family'] == "Debian"
+      - ansible_facts.services['ufw.service'].state == "running" or
+        ansible_facts.services['ufw'].state == "running"
+
+  - name: Allow PiHole Traffic through UFW (Debian)
+    ufw:
+      rule: allow
+      name: pihole
+      state: enabled
+    when: 
+      - ansible_facts['os_family'] == "Debian"
+      - ansible_facts.services['ufw.service'].state == "running" or
+        ansible_facts.services['ufw'].state == "running"
+
+  - name: Pull the latest 'pihole/pihole' Docker Image
+    docker_image:
+      name: pihole/pihole:latest
+      source: pull
+
+  - name: Create and Start the 'PiHole' Container
+    docker_container: 
+      name: "PiHole"
+      image: pihole/pihole:latest
+      state: started
+      network_mode: host
+      restart_policy: unless-stopped
+      env:
+        TZ: America/Chicago
+        WEBPASSWORD: "{{ user_pass }}"
+      volumes:
+        - "{{ pihole }}/etc-pihole:/etc/pihole"
+        - "{{ pihole }}/etc-dnsmasq.d:/etc/dnsmasq.d"
+      capabilities:
+        - NET_ADMIN
+
+  - name: PiHole Installation Complete
+    debug:
+      msg:
+        - "PiHole should now be accessable at:"
+        - "http://{{ ansible_hostname }}/admin"

@@ -1,0 +1,16 @@
+[kvm]
+Quinjet
+
+[docker]
+Quinjet
+Captain
+
+[vms]
+Captain
+Yondu
+# Vision
+# Mantis
+
+[no_reboot]
+Quinjet
+Captain

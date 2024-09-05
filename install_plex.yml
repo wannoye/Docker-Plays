@@ -1,0 +1,114 @@
+---
+- name: Install Plex Media Server in Docker
+  hosts: docker
+  become: true
+  vars:
+    - ansible_connection: ssh
+    - db_dir: "/var/lib/"
+    - backup: "/mnt/Knowhere/PMS-{{ ansible_hostname | upper }}.tar.gz"
+    - restart_existing: false
+    - existing_server: docker
+    - shm: "/dev/shm"
+    - media: "/mnt/Knowhere"
+    - restore_db: false
+
+  tasks:
+
+  - name: Get Service Facts
+    service_facts:
+
+  - name: Stop Existing Plex Media Server 
+    docker_container: 
+      name: PlexMediaServer
+      image: plexinc/pms-docker
+      state: stopped
+    delegate_to: "{{ existing_server }}"
+    ignore_errors: true
+
+  - name: Backup Plex to "{{ backup }}"
+    shell: "cd {{ db_dir }} && tar -czvf {{ backup }} plexmediaserver"
+    delegate_to: "{{ existing_server }}"
+    # when: restore_db
+
+  - name: Restart the Existing Plex Media Server 
+    docker_container: 
+      name: PlexMediaServer
+      image: plexinc/pms-docker
+      state: started
+    delegate_to: "{{ existing_server }}"
+    # ignore_errors: true
+    when: restart_existing
+
+  - name: Restore the Plex Media Server Database
+    shell: "tar -xvzf {{ backup }} -C {{ db_dir }}"
+    when: restore_db
+
+  - name: Clean Up Archive File
+    file:
+      path: "{{ backup }}"
+      state: absent
+    when: restore_db
+
+  - name: Remove Existing 'plexinc/pms-docker' Docker Images
+    docker_image:
+      name: plexinc/pms-docker
+      state: absent
+      force_absent: true
+
+  - name: Allow Plex Traffic through Firewalld (RHEL)
+    firewalld:
+      zone: public
+      service: plex
+      permanent: true
+      state: enabled
+    when: 
+      - ansible_facts['os_family'] in ["RedHat", "AlmaLinux"]
+      - ansible_facts.services['firewalld.service'].state == "running"
+
+  - name: Create a UFW Profile for Plex (Debian)
+    template:
+      src: "plex.ufw.j2"
+      dest: "/etc/ufw/applications.d/plex"
+      owner: root
+      group: root
+      mode: '0644'
+    when: 
+      - ansible_facts['os_family'] == "Debian"
+      - ansible_facts.services['ufw.service'].state == "running" or
+        ansible_facts.services['ufw'].state == "running"
+
+  - name: Allow Plex Traffic through UFW (Debian)
+    ufw:
+      rule: allow
+      name: plex
+      state: enabled
+    when: 
+      - ansible_facts['os_family'] == "Debian"
+      - ansible_facts.services['ufw.service'].state == "running" or
+        ansible_facts.services['ufw'].state == "running"
+
+  - name: Pull the latest 'plexinc/pms-docker' Docker Image
+    docker_image:
+      name: plexinc/pms-docker:latest
+      source: pull
+
+  - name: Create and Start the 'PlexMediaServer' Container
+    docker_container: 
+      name: PlexMediaServer
+      image: plexinc/pms-docker:latest
+      state: started
+      network_mode: host
+      shm_size: "6G"
+      restart_policy: unless-stopped
+      env:
+        TZ: America/Chicago
+      volumes:
+        - "{{ db_dir }}/plexmediaserver:/config"
+        - "{{ shm }}:/transcode"
+        - "{{ media }}:{{ media }}"
+
+  - name: Installation Complete
+    debug:
+      msg:
+        - "Plex should now be running at:"
+        - "http: or http://{{ ansible_hostname }}:32400/web"
