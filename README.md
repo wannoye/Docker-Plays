@@ -18,10 +18,9 @@ Works with Debian and RedHat based linux servers.
 ## "install_pihole.yml" Ansible Playbook
 
 Installs and configures PiHole in Docker.<br/>
-Firewall rules are created where needed.<br/>
+Firewall rules are created for DNS, DHCP, and Web access.<br/>
 Running instances are stopped, and docker images are refreshed.<br/>
-After installation, the web console is available at:
-```https://<IP>/admin```
+After installation, the web console is available at: ```https://<IP>/admin```<br/>
 The Administrator password is set by the 'user_pass' var in 'group_vars/all.yml'.<br/>
 Works with Debian and RedHat based linux servers.
 
@@ -37,11 +36,10 @@ Works with Debian and RedHat based linux servers.
 
 ## "install_plex.yml" Ansible Playbook
 Installs and configures Plex Media Server in Docker.<br/>
-Firewall rules are created where needed.<br/>
+Firewall rules are created to allow remote access.<br/>
 Running instances are stopped, and docker images are refreshed.<br/>
 The Plex library database is backed up and optionally restored.<br/>
-After installation Plex can be accessed at:
-```http: - or - https://<IP>:32400/web ```
+After installation Plex can be accessed at: ```http: - or - https://<IP>:32400/web```<br/>
 Works with Debian and RedHat based linux servers.
 
 ### Requires:
@@ -54,5 +52,3 @@ Works with Debian and RedHat based linux servers.
 ### Usage:
 
 ```ansible-playbook install_plex.yml -i inventory --ask-vault-pass```
-
-
