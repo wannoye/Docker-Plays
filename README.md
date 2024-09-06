@@ -19,6 +19,7 @@ Works with Debian and RedHat based linux servers.
 
 Installs and configures PiHole in Docker.<br/>
 Firewall rules are created for DNS, DHCP, and Web access.<br/>
+PiHole's configuration files are backed up to '/var/lib/docker/PiHole'.<br/>
 Running instances are stopped, and docker images are refreshed.<br/>
 After installation, the web console is available at: ```https://<IP>/admin```<br/>
 The Administrator password is set by the 'user_pass' var in 'group_vars/all.yml'.<br/>

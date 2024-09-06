@@ -11,18 +11,40 @@
   - name: Get Service Facts
     service_facts:
 
-  - name: Stop the Existing PiHole Server 
-    docker_container: 
-      name: PiHole
-      image: pihole/pihole
-      state: stopped
+  - name: Collecting Container Info
+    docker_container_info:
+      name: "PiHole"
+    register: info
+    failed_when: false
+
+  - name: Conditional Check on Container Info
+    set_fact:
+      exists: "{{ info.container and info.container != '' }}"
+
+  - name: Create a Directory for Pihole 
+    file:
+      path: "{{ pihole }}"
+      state: directory
+      mode: '0755'
+
+  - name: Backup the Existing PiHole Server 
+    shell: "{{ item }}" 
     ignore_errors: true
+    loop:
+      - "docker exec PiHole pihole -a -t /etc/pihole/PiHole-$(date +'%m%d%Y').tar.gz"
+      - "mv {{ pihole }}/etc-pihole/PiHole-$(date +'%m%d%Y').tar.gz {{ pihole }}"
+    when: exists
 
   - name: Remove Existing 'pihole/pihole' Docker Images
     docker_image:
       name: pihole/pihole
       state: absent
       force_absent: true
+
+  - name: Pull the latest 'pihole/pihole' Docker Image
+    docker_image:
+      name: pihole/pihole:latest
+      source: pull
 
   - name: Allow PiHole Traffic through Firewalld (RHEL)
     firewalld:
@@ -60,10 +82,13 @@
       - ansible_facts.services['ufw.service'].state == "running" or
         ansible_facts.services['ufw'].state == "running"
 
-  - name: Pull the latest 'pihole/pihole' Docker Image
-    docker_image:
-      name: pihole/pihole:latest
-      source: pull
+  - name: Stop the Existing PiHole Server 
+    docker_container: 
+      name: PiHole
+      image: pihole/pihole
+      state: stopped
+    when: exists
+    ignore_errors: true
 
   - name: Create and Start the 'PiHole' Container
     docker_container: 
