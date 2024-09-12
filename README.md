@@ -61,10 +61,6 @@ Print, copy, and scan scripts written to quickly perform these actions from the 
 After installation, the web console is available at: ```https://<IP>:613/admin (Username: 'print')```
 
 Note: The print, copy, and scan Scripts have not yet been implemented in the install_cups.yml playbook.<br/>
-Script Syntax: <br/>
- - Type "prnt /path/to/file" to print a file via command line.<br/>
- - Type "scan" to scan a file after placing it in the scanner bed. <br/>
- - Type "copy" to scan then print a document after placing it in the scanner bed.<br/>
 
 Scanned and coppied images are saved to {{ shared }}/Scans.
 
@@ -79,3 +75,8 @@ Scanned and coppied images are saved to {{ shared }}/Scans.
 ### Usage:
 
 ```ansible-playbook install_cups.yml -i inventory --ask-vault-pass```
+
+Script Syntax: <br/>
+ - ```prnt /path/to/file``` Print a file via command line.<br/>
+ - ```scan``` Scan a document after placing it in the scanner bed. <br/>
+ - ```copy``` Scan and print a document after placing it in the scanner bed.<br/>
