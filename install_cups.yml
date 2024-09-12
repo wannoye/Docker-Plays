@@ -1,0 +1,110 @@
+---
+- name: Install CUPS in Docker
+  hosts: Quinjet
+  become: true
+  vars:
+    - ansible_connection: ssh
+    - cups_dir: "/var/lib/docker/CUPS"
+    - share: "/mnt/Star-Lord/Xandar"
+    - backup: "CUPS-{{ ansible_hostname | upper }}.tar.gz"
+    - restore_config: false
+
+  tasks:
+
+  - name: Get Service Facts
+    service_facts:
+
+  - name: Stop and Disable CUPS if Running Locally
+    systemd:
+      name: cups
+      enabled: no
+      state: stopped
+    ignore_errors: true
+    when: ansible_facts.services['cups.service'].state == "running" or
+          ansible_facts.services['cups'].state == "running"
+
+  - name: Stop Existing CUPS Container
+    docker_container: 
+      name: CUPS
+      state: stopped
+    ignore_errors: true
+
+  - name: Backup CUPS Configuration Files
+    shell: "cd {{ cups_dir }} && tar -czvf {{ share }}/{{ backup }} *.conf"
+
+  - name: Create a Directory for the CUPS Container if Missing
+    file:
+      path: "{{ cups_dir }}"
+      state: directory
+      mode: '0755'
+
+  - name: Remove Existing 'olbat/cupsd' Docker Image
+    docker_image:
+      name: olbat/cupsd
+      state: absent
+      force_absent: true
+
+  - name: Allow CUPS Traffic through Firewalld (RHEL)
+    firewalld:
+      zone: public
+      port: 631/tcp
+      permanent: true
+      state: enabled
+    when: 
+      - ansible_facts['os_family'] in ["RedHat", "AlmaLinux"]
+      - ansible_facts.services['firewalld.service'].state == "running"
+
+  - name: Allow CUPS Traffic through UFW (Debian)
+    ufw:
+      rule: allow
+      port: 631
+      proto: tcp
+      state: enabled
+    when: 
+      - ansible_facts['os_family'] == "Debian"
+      - ansible_facts.services['ufw.service'].state == "running" or
+        ansible_facts.services['ufw'].state == "running"
+
+  - name: Restore CUPS Configuration Files
+    shell: "tar -xvzf {{ share }}/{{ backup }} -C {{ cups_dir }}"
+    when: restore_config
+
+  - name: Clean Up Archive File
+    file:
+      path: "{{ share }}/{{ backup }}"
+      state: absent
+    when: restore_config
+
+  - name: Pull the latest 'olbat/cupsd' Docker Image
+    docker_image:
+      name: olbat/cupsd:latest
+      source: pull
+
+  - name: Create and Start the 'CUPS' Container
+    docker_container: 
+      name: CUPS
+      image: olbat/cupsd:latest
+      state: started
+      restart_policy: unless-stopped
+      privileged: true
+      env:
+        TZ: America/Chicago
+      volumes:
+        - "{{ share }}:{{ share }}"
+        - "/var/run/dbus:/var/run/dbus"
+        - "/dev/bus/usb:/dev/bus/usb"
+        - "{{ cups_dir }}/cupsd.conf:/etc/cups/cupsd.conf"
+        - "{{ cups_dir }}/printers.conf:/etc/cups/printers.conf"
+      published_ports:
+        - "631:631/tcp"
+
+  - name: Change Default Password for 'print' User
+    community.docker.docker_container_exec:
+      container: CUPS
+      command: sh -c "echo 'print:{{ user_pass }}' | chpasswd"
+
+  - name: Installation Complete
+    debug:
+      msg:
+        - "CUPS should now be running at:"
+        - "http: or http://{{ ansible_hostname }}:631/admin"

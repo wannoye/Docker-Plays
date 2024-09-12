@@ -53,3 +53,28 @@ Works with Debian and RedHat based linux servers.
 ### Usage:
 
 ```ansible-playbook install_plex.yml -i inventory --ask-vault-pass```
+
+## "install_cups.yml" Ansible Playbook
+Installs and configures a CUPS server in Docker.<br/>
+The 'cupsd.conf' and 'printers.conf' files are backed up to the '{{ share }}' directory<br/>
+Print, copy, and scan scripts written to quickly perform these caction from the CLI.<br/>
+After installation, the web console is available at: https://<IP>:613/admin (Username: 'print')
+
+Note: The print, copy, and scan Scripts have not yet been implemented in the install_cups.yml playbook.<br/>
+Syntax for print, copy, and scan scripts: <br/>
+ - Type "prnt /path/to/file" to print a file via command line.<br/>
+ - Type "scan" to scan a file after placing it in the scanner bed. <br/>
+ - Type "copy" to scan then print a document after placing it in the scanner bed.<br/>
+Scanned and coppied images are saved to {{ shared }}/Scans.
+
+### Requires:
+- The following variables assigned in 'group_vars/all.yml':<br/>
+    - An admin username and password assigned to 'ansible_user' and 'ansible_become_pass'<br/>
+    - A password for the admin web console ('print' user) assigned to 'user_pass'<br/>
+- The 'cups_dir' var specifies the local directory for the 'printer.config' and 'cupsd.conf' config files.<br/>
+- The 'share' var defines a location for backups and scanned images to be saved.<br/>
+- Configuration files can be restored from the archive using the boolean 'restore_config' var.<br/>
+
+### Usage:
+
+```ansible-playbook install_cups.yml -i inventory --ask-vault-pass```
