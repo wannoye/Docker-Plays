@@ -27,6 +27,7 @@ Works with Debian and RedHat based linux servers.
 
 ### Requires:
 
+- The Ansible Galaxy Collection 'community.docker'
 - The following variables assigned in 'group_vars/all.yml':<br/>
     - An admin username and password assigned to 'ansible_user' and 'ansible_become_pass'<br/>
     - A password for the admin web console assigned to 'user_pass'
@@ -45,6 +46,7 @@ Works with Debian and RedHat based linux servers.
 
 ### Requires:
 
+- The Ansible Galaxy Collection 'community.docker'
 - An admin username and password assigned to the 'ansible_user' and 'ansible_become_pass' vars in 'group_vars/all.yml'<br/>
 - The 'existing_server' var specifies which server's database is backed up.<br/>
 - Database backup file name and destination is specified with the 'backup' variable.<br/>
@@ -65,6 +67,7 @@ Note: The print, copy, and scan Scripts have not yet been implemented in the ins
 Scanned and coppied images are saved to {{ shared }}/Scans.
 
 ### Requires:
+- The Ansible Galaxy Collection 'community.docker'
 - The following variables assigned in 'group_vars/all.yml':<br/>
     - An admin username and password assigned to 'ansible_user' and 'ansible_become_pass'<br/>
     - A password for the admin web console ('print' user) assigned to 'user_pass'<br/>
@@ -76,7 +79,7 @@ Scanned and coppied images are saved to {{ shared }}/Scans.
 
 ```ansible-playbook install_cups.yml -i inventory --ask-vault-pass```
 
-Script Syntax: <br/>
+Script Syntax: (INCOMPLETE)<br/>
  - ```prnt /path/to/file``` Print a file via command line.<br/>
  - ```scan``` Scan a document after placing it in the scanner bed. <br/>
  - ```copy``` Scan and print a document after placing it in the scanner bed.<br/>

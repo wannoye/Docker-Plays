@@ -52,6 +52,9 @@
       - ansible_facts.services['ufw.service'].state == "running" or
         ansible_facts.services['ufw'].state == "running"
 
+  - name: Install the 'community.docker' Collection in Ansible
+    command: ansible-galaxy collection install community.docker
+
   - name: Add and Enable the Docker Repo (RHEL)
     yum_repository:
       name: "docker-ce"
