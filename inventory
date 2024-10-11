@@ -1,16 +1,8 @@
-[kvm]
+[hosts]
 Quinjet
 
-[docker]
-Quinjet
-Captain
+[containers]
 
 [vms]
 Captain
 Yondu
-# Vision
-# Mantis
-
-[no_reboot]
-Quinjet
-Captain
